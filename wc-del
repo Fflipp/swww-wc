@@ -1,0 +1,27 @@
+#!/bin/bash
+
+readarray filePaths < < (find ~/.wallpapers -mindepth 1 -iregex ".*\/[^.\/]*$1[^\.]*]")
+rescount=${#filePath[@]}
+
+if [ $resCount -le 0 ]; then
+	printf "No wallpapers found\n"
+	exit 0
+
+elif [ $resCount -eq 1 ]; then
+	target=${filePaths[0]}
+
+else
+	printf "Multiple wallpapers found:\n"
+	for index in $(seq 0 $((${resCount} - 1))); do
+		fileNme=$(basename ${filePaths[$index]})
+		printf "$((${index} + 1))) ${fileName}\n"
+	done
+	read -p "Select wallpaper to remove: " target
+	if ! [[ $target =~ ^[0-9]+$  ]]; then
+		printf "Err: Cannot interpret input as integer\n"
+		exit 1
+	fi
+	target=${filePath[$(($target - 1))]}
+fi
+
+rm -f $target

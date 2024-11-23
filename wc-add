@@ -1,0 +1,8 @@
+#!/bin/bash
+
+if [ ! -f $1 ]; then
+	printf "File not found"
+	exit 1
+fi
+
+cp -t ~/.wallpapers $@

@@ -1,0 +1,69 @@
+#!/bin/bash
+
+# Common help/utility functions
+function usage() {
+	echo "Usage: $0 [-hsu] wallpaperName"
+	exit 1
+}
+
+function _help() {
+	echo "swww-wc wallpaper changer"
+	echo "\t A utility for easily managing and swapping wallpapers with swww"
+	echo "Usage: $0 [-hsu] wallpaperName"
+	echo "\t -h Prints this help"
+	echo "\t -s Searches for system-wide wallpapers only"
+	echo "\t -u Searches for user wallpapers only"
+}
+
+# Looks for files within a requested folder with filenames that match a given regex
+# Ignores file extensions
+# ARGS:
+# 	$1 - Nameref used to return the results array
+# 	$2 - Folder to be searched
+# 	$3 - Regex to match filenames against
+function getFilesByName() {
+	local -n foundFiles=$1
+	readarray foundFiles < <(find $2 -mindepth 1 -iregex ".*\/[^.\/]*$3[^\/]*")
+}
+
+while getopts ":hsu" opt; do
+	case "${opt}"
+		h)
+			helpflag
+
+	esac
+
+done
+
+declare -a sysFilePaths
+getFilesByName sysFilePaths /usr/share/swww-wc/wallpapers $1
+
+declare -a usrFilePaths=()
+if [ -d ~/.wallpapers ]; then
+	getFilesByName usrFilePaths ~/.wallpapers $1
+fi
+
+filePaths=( "${sysFilePaths[@]}" "${usrFilePaths[@]}" )
+resCount=${#filePaths[@]}
+
+if [ $resCount -le 0 ]; then
+	printf "No wallpapers found\n"
+	exit 0
+elif [ $resCount -eq 1 ]; then
+	target=${filePaths[0]}
+else
+	printf "Multiple wallpapers found:\n"
+	for index in $(seq 0 $((${resCount} - 1)))
+	do
+		fileName=$(basename ${filePaths[$index]})
+		printf "$((${index} + 1))) ${fileName}\n"
+	done
+	read -p "Select wallpaper: " target
+	if ! [[ $target =~ ^[0-9]+$ ]]; then
+		printf "Err: Cannot interpret input as integer\n"
+		exit 1
+	fi
+	target=${filePaths[$(($target - 1))]}
+fi
+
+(&>/dev/null swww img $target --resize crop --transition-type wipe --transition-angle 45 --transition-duration 1.5 &)
