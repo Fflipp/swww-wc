@@ -30,6 +30,15 @@ function getFilesByName() {
     readarray foundFiles < <(find $2 -mindepth 1 -iregex ".*\/[^.\/]*$3[^\/]*")
 }
 
+# Retrieves the $HOME directory of the original user in the event of sudo or su
+# Only activtes when the current user is root, since there's NO good reason to
+# ever be configuring user-level wallpapers for the system root.
+if [ "$EUID" -eq 0 ]; then
+    _home=$(getent passwd $(logname) | cut -d: -f6)
+else
+    _home=~
+fi
+
 # Reads in flag arguments and translates them into internal status flags
 declare sysOnly=false
 declare usrOnly=false
@@ -59,7 +68,7 @@ fi
 
 declare -a usrFilePaths=()
 if [[ "$sysOnly" != true ]]; then
-    getFilesByName usrFilePaths ~/.wallpapers $1
+    getFilesByName usrFilePaths ${_home}/.wallpapers $1
 fi
 
 filePaths=( "${sysFilePaths[@]}" "${usrFilePaths[@]}" )
