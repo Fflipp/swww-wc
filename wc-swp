@@ -1,9 +1,8 @@
 #!/bin/bash
 
-_usageText="Usage: $0 [-h] [-s] [-u] wallpaperName\n"
-_helpText="swww-wc wallpaper remover
-\t A tool for removing swww-wc wallpapers
-Usage: $0 [-h] [-s] [-u] wallpaperName
+_usageText="Usage: $0 [-h] [-s] [-u] wallpaperName"
+_helpText="swww-wc wallpaper changer
+\t A utility for easily managing and swappeing wallpapers with swww
 \t -h Prints this help
 \t -s Searches for system-wide wallpapers only
 \t -u Searches for user wallpapers only
@@ -20,7 +19,7 @@ function _help() {
 }
 
 # Looks for files within a requested folder with filenames that match a given regex
-# Ignores file exensions
+# Ignores file extensions
 # ARGS:
 #       $1 - Nameref used to return the results array
 #       $2 - Folder to be searched
@@ -58,7 +57,7 @@ if [[ "$usrOnly" != true ]]; then
 fi
 
 declare -a usrFilePaths=()
-if [[ "$sysOnly" != true ]]; then
+if [[ "$sysOnly" != true  && -d ~/.wallpapers ]]; then
     getFilesByName usrFilePaths ~/.wallpapers $1
 fi
 
@@ -67,27 +66,26 @@ resCount=${#filePaths[@]}
 
 # No results found, program exits
 if [ $resCount -le 0 ]; then
-	printf "No wallpapers found\n"
-	exit 0
-# One result found, target set implicitly
+     printf "No wallpapers found\n"
+    exit 0
+# One result found, target is set implicitly
 elif [ $resCount -eq 1 ]; then
-	target=${filePaths[0]}
+    target=${filePaths[0]}
 # Multiple results found, user is queried for selection
 else
-	printf "Multiple wallpapers found:\n"
-	for index in $(seq 0 $((${resCount} - 1))); do
-		fileName=$(basename ${filePaths[$index]})
-		printf "$((${index} + 1))) ${fileName}\n"
-	done
-	read -p "Select wallpaper to remove: " target
-	if ! [[ $target =~ ^[0-9]+$  ]]; then
-		printf "Err: Cannot interpret input as integer\n"
-		exit 1
-	fi
-	target=${filePaths[$(($target - 1))]}
+    printf "Multiple wallpapers found:\n"
+    for index in $(seq 0 $((${resCount} - 1)))
+    do
+            fileName=$(basename ${filePaths[$index]})
+            printf "$((${index} + 1))) ${fileName}\n"
+    done
+    read -p "Select wallpaper: " target
+    if ! [[ $target =~ ^[0-9]+$ ]]; then
+            printf "Err: Cannot interpret input as integer\n"
+            exit 1
+    fi
+    target=${filePaths[$(($target - 1))]}
 fi
 
-read -p "Delete $(echo ${target} | tr -d "\n") ? [y/N] " confirmation
-if [[ $confirmation =~ ^[yY]$ ]]; then
-    rm -f $target
-fi
+# Calls swww to change background
+(&>/dev/null swww img $target --resize crop --transition-type wipe --transition-angle 45 --transition-duration 1.5 &)

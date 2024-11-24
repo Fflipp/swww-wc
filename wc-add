@@ -1,8 +1,52 @@
 #!/bin/bash
 
-if [ ! -f $1 ]; then
-	printf "File not found"
-	exit 1
+function usage() {
+    echo "Usage: $0 [-h] [-s] filePath"
+    exit 1
+}
+
+function _help() {
+    printf "swww-wc add wallpaper\n"
+    printf "\t Adds a file to the searchable wallpapers for swww-wc"
+    printf "Usage: $0 [-h] [-s] filePath\n"
+    printf "\t -h Prints this help\n"
+    printf "\t -s Adds wallpaper to system instead of user directory\n"
+    exit 0
+}
+
+if [ ! -d ~/.wallpapers]; then
+    mkdir ~/.wallpapers
+fi
+
+declare sysAdd=false
+
+while getopts ":hs" opt; do
+    case "${opt}" in
+        h) 
+            _help
+            ;;
+        s)
+            sysAdd=true
+            ;;
+        *)
+            usage
+            ;;
+    esac
+done
+
+shift $((OPTIND-1))
+
+for filePath in $@
+do
+    if [ ! -f "$filePath" ]; then
+        printf "File not found: "$filePath""
+        exit 1
+    fi
+done
+
+if [[ "$sysAdd" == true ]]; then
+    cp -t /usr/share/swww-wc/wallpapers $@
+    exit 0
 fi
 
 cp -t ~/.wallpapers $@
